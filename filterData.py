@@ -6,7 +6,6 @@ matplotlib.use('GTK')
 import math
 import json
 import time
-#from pykalman import KalmanFilter
 import numpy as np
 import matplotlib.pyplot as plt
 import sys
@@ -161,11 +160,8 @@ with open(sys.argv[1]) as json_data:
 
 N_kf, E_kf = '', ''
 
-N_meas, E_meas = [],[]
-N_state_filt, E_state_filt = [],[]
-
-N_positions, E_positions = [],[]
-N_pos_filtered, E_pos_filtered = [],[]
+N_positions, E_positions = [],[] 	# will hold raw positions
+N_pos_filtered, E_pos_filtered = [],[]  # will hold filtered positions
 
 for i in range(0, len(data)):
 	t = data[i]['time']
@@ -187,22 +183,15 @@ for i in range(0, len(data)):
                 E_vel = speed * math.sin(heading)
 		N_acc, E_acc = northAndEastAcceleration(acceleration, heading, roll, pitch)
 
-		N_meas.append([N_pos, N_vel, N_acc])
-		E_meas.append([E_pos, E_vel, E_acc])
-
-		###########
 		N_positions.append(N_pos)
 		E_positions.append(E_pos)
-		###########
 
-		if len(N_meas) == 1:
+		if len(N_positions) == 1:
 			N_kf = KalmanFilter(N_pos, N_vel, latLong_std, N_acc_std, t)
 			E_kf = KalmanFilter(E_pos, E_vel, latLong_std, E_acc_std, t)
 
-			###########
 			N_pos_filtered.append(N_pos)
 			E_pos_filtered.append(E_pos)
-			###########
 			
 			start_time = utcToSeconds(t)
 
@@ -210,39 +199,21 @@ for i in range(0, len(data)):
 			N_kf.predict(N_acc * GRAVITY, t)
 			E_kf.predict(E_acc * GRAVITY, t)
 
-#			N_kf.predict(N_acc, t)
-#			E_kf.predict(E_acc, t)
-			
-
 			N_kf.update(N_pos, N_vel, error_pos, error_speed)
 			E_kf.update(E_pos, E_vel, error_pos, error_speed)
 
 			N_pred_pos = N_kf.getPredictedPosition()
 			E_pred_pos = E_kf.getPredictedPosition()
 			
-			
-			geopoint = metersToGeopoint(N_pred_pos, E_pred_pos)
-
-			pred_lat = geopoint[LAT]
-			pred_long = geopoint[LON]
-		
 			N_pred_vel = N_kf.getPredictedVelocity()
 			E_pred_vel = E_kf.getPredictedVelocity()
 			
-
 			N_pos_filtered.append(N_pred_pos)
 			E_pos_filtered.append(E_pred_pos)			
 		
-			print 'measured:'
-			print data[i]['coordinate']
-			print [N_pos, E_pos]
-			print metersToGeopoint(N_pos, E_pos)
-			
-			print 'predicted:'
-			print [N_pred_pos, E_pred_pos]
-			print metersToGeopoint(N_pred_pos, E_pred_pos)
 
 
+# COLLECTING DATA FROM 3rd PARTY (STRAVA)
 
 with open(sys.argv[2]) as route_data:
         route_data = json.load(route_data)['features'][0]['geometry']['coordinates'][0]
@@ -254,48 +225,21 @@ for i in range(len(route_data)):
 	route_N_pos.append(latitudeToMeters(route_data[i][1]))
 	route_E_pos.append(longitudeToMeters(route_data[i][0]))		
 
+
+
+# GRAPHING
+
 max_E = max(max(E_positions), max(E_pos_filtered), max(route_E_pos))
 min_E = min(min(E_positions), min(E_pos_filtered), min(route_E_pos))
 max_N = max(max(N_positions), max(N_pos_filtered), max(route_N_pos))
 min_N = min(min(N_positions), min(N_pos_filtered), min(route_N_pos))
 n = len(E_positions)
 
-plt.figure(1)
-#plt.subplot(311)
-plt.plot(E_positions, N_positions, 'r', linewidth = 2)
-#plt.axis([min_E, max_E, min_N, max_N])
-
-#plt.subplot(312)
-plt.plot(E_pos_filtered, N_pos_filtered, 'b', linewidth = 2)
-#plt.axis([min_E, max_E, min_N, max_N])
-
-#plt.subplot(313)
-plt.plot(route_E_pos, route_N_pos, 'g', linewidth=2)
-plt.axis([min_E, max_E, min_N, max_N])
-
-
-plt.figure(2)
-
+plt.figure()
 plt.plot(E_positions, N_positions, 'r', linewidth = 2)
 plt.plot(E_pos_filtered, N_pos_filtered, 'b', linewidth = 2)
 plt.plot(route_E_pos, route_N_pos, 'g', linewidth=2)
-
 plt.axis([max_E - 200, max_E - 100, max_N + 100, max_N + 200])
-'''
-plt.subplot(211)
-plt.plot(E_positions)
-#plt.axis([0, n, min_E, max_E])
-
-plt.subplot(212)
-plt.plot(E_pos_filtered)
-#plt.axis([0, n, min_E, max_E])
-
-plt.figure(3)
-plt.plot(N_positions,'b')
-#plt.axis([0, n, min_N, max_N])
-
-plt.plot(N_pos_filtered,'r')
-#plt.axis([0, n, min_N, max_N])
-'''
+plt.title("meters east of (0,0) vs meters north of (0,0)")
 
 plt.show()

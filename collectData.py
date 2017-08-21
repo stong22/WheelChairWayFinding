@@ -93,25 +93,23 @@ if __name__ == '__main__':
 		t = None
 
 		while True:
-#      			if gpsd.utc[-7:-3] != t:
-			if True:
-				t = gpsd.utc[-7:-3]
-#				print t
-				point = ({
-					'time': gpsd.utc,
-					'accel': bno.read_accelerometer(),
-					'euler': bno.read_euler(),
-					'coordinate': (gpsd.fix.latitude, gpsd.fix.longitude),
-					'speed': gpsd.fix.speed,
-					'error': (gpsd.fix.eps, gpsd.fix.epx, gpsd.fix.epv, gpsd.fix.ept),
-					'altitude': gpsd.fix.altitude,
-					'track': gpsd.fix.track
-					})
-				data['dataPoints'].append(point)
+			t = gpsd.utc
+			point = ({
+				'time': gpsd.utc,
+				'accel': '',
+				'euler': '',
+				'coordinate': (gpsd.fix.latitude, gpsd.fix.longitude),
+				'speed': gpsd.fix.speed,
+				'error': (gpsd.fix.eps, gpsd.fix.epx, gpsd.fix.epv, gpsd.fix.ept),
+				'altitude': gpsd.fix.altitude,
+				'track': gpsd.fix.track
+				})
 
-#      	  			print point      
-				time.sleep(0.2)
-#				print time.time() - start
+			# IF TIME IS 0.198 ish SECONDS LATER 
+				# point['accel'] = bno.read_accelerometer()
+				# point['euler'] = bno.read_euler()
+			
+			data['dataPoints'.append(point)
 
 	except (KeyboardInterrupt, SystemExit):	#when you press ctrl+c
 		print "\nKillingThread..."
